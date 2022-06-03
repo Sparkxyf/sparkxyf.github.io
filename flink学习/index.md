@@ -11,7 +11,7 @@ keywords:
 > 天行健，君子以自强不息
 
 
-1. [Java](java性能调优/java性能调优基础.md)
+1. [Java](../java性能调优/java性能调优基础.md)
 
 
 

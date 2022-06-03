@@ -149,7 +149,7 @@ simple_jekyll_search:
 google:
     analytics_id: UA-80669434-1
     adsense:
-        footer: true
+        footer: false
         sidebar: true 
         sidebar-detail: true 
         content_header: false

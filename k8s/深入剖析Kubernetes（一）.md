@@ -1,3 +1,11 @@
+---
+layout: post
+title: 深入剖析Kubernetes（一）
+categories: [k8s]
+description: 深入剖析Kubernetes（一）
+keywords: k8s
+---
+
 # 深入剖析Kubernetes（一）
 
 ## 容器技术的开始

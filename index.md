@@ -1,4 +1,15 @@
+---
+layout: post
+title: spark
+categories: []
+description: spark's blog
+keywords:
+---
+
 这个网站是用来存放我的markdown笔记，利用GitHub Pages搭建，直接使用官方主题，只要上传markdown就可以自动转换成html，相比在GitHub仓库，这个网站速度要快一点，观感也要好。
+
+> 天行健，君子以自强不息
+
 
 1. [Java](java性能调优/java性能调优基础.md)
 

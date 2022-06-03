@@ -1,6 +1,7 @@
 theme: jekyll-theme-cayman
 plugins:
   - jekyll-archives
+  - jekyll-relative-links
 include:
   - CONTRIBUTING.md
   - README.md
@@ -9,3 +10,6 @@ include:
   - CODE_OF_CONDUCT.md
   - ISSUE_TEMPLATE.md
   - PULL_REQUEST_TEMPLATE.md
+relative_links:
+  enabled: true
+  collections: true

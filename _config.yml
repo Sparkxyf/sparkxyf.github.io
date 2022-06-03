@@ -2,7 +2,7 @@
 #   Main Configs   #
 # ---------------- #
 baseurl:
-url: https://blog.sparkxyf.com
+url: https://sparkxyf.com
 date_format: "ordinal"
 title: spark
 subtitle: "天行健，君子以自强不息"

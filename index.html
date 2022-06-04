@@ -48,6 +48,8 @@ comments: false
     <div class="columns">
         <div class="column two-thirds" >
             <ol class="repo-list">
+              {% case site.components.tao.view %}
+              {% when 'list' %}
               {% for post in site.tao %}
               {% if paginator.page == 1 %}
               {% if post.topmost == true %}

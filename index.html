@@ -44,13 +44,11 @@ comments: false
     </div>
 </section>
 <!-- /.banner -->
-{% case site.components.tao.view %}
-{% when 'list' %}
 <section class="container content">
     <div class="columns">
         <div class="column two-thirds" >
             <ol class="repo-list">
-              {% for post in site.tao %}
+              {% for post in site.posts %}
               {% if paginator.page == 1 %}
               {% if post.topmost == true %}
               <li class="repo-list-item">
@@ -76,7 +74,7 @@ comments: false
               {% endif %}
               {% endfor %}
 
-              {% for post in paginator.tao %}
+              {% for post in paginator.posts %}
               {% if post.topmost != true %}
               <li class="repo-list-item">
                 <h3 class="repo-list-name">

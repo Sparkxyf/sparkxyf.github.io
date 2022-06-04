@@ -9,6 +9,7 @@ menu: 编程之道
 permalink: /tao/
 ---
 
+> 形而上者谓之道, 大道至简无形, 可意会不可言传
 
 {% case site.components.tao.view %}
 
@@ -31,7 +32,7 @@ permalink: /tao/
 
 {% assign item_grouped = site.tao | where_exp: 'item', 'item.title != "tao Template"' | group_by: 'cate1' | sort: 'name' %}
 {% for group in item_grouped %}
-###### {{ group.name }}
+#### {{ group.name }}
 {% assign cate_items = group.items | sort: 'title' %}
 {% assign item2_grouped = cate_items | group_by: 'cate2' | sort: 'name' %}
 {% for sub_group in item2_grouped %}

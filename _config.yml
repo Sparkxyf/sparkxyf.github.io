@@ -124,6 +124,10 @@ collections:
     wiki:
         output: true
         permalink: /wiki/:path/
+    tao:
+        output: true
+        permalink: /tao/:path/
+
 
 # ---------------- #
 #      Comments    #

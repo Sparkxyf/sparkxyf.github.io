@@ -48,24 +48,24 @@ comments: false
     <div class="columns">
         <div class="column two-thirds" >
             <ol class="repo-list">
-              {% for tao in site.tao %}
+              {% for t in site.tao %}
               {% if paginator.page == 1 %}
               {% if tao.topmost == true %}
               <li class="repo-list-item">
                 <h3 class="repo-list-name">
-                  <a href="{{ site.url }}{{ tao.url }}"><span class="top-most-flag">[置顶]</span>{{ tao.title }}</a>
+                  <a href="{{ site.url }}{{ t.url }}"><span class="top-most-flag">[置顶]</span>{{ t.title }}</a>
                 </h3>
                 <p class="repo-list-description">
                 {{ tao.excerpt | strip_html | strip }}
                 </p>
                 <p class="repo-list-meta">
                 <span class="meta-info">
-                  <span class="octicon octicon-calendar"></span> {{ tao.date | date: "%Y/%m/%d" }}
+                  <span class="octicon octicon-calendar"></span> {{ t.date | date: "%Y/%m/%d" }}
                 </span>
-                {% for cat in tao.cate1 %}
+                {% for cat in t.cate1 %}
                 <span class="meta-info">
                   <span class="octicon octicon-file-directory"></span>
-                  <a href="{{ site.url }}/tao/#{{ cat1 }}" title="{{ cat1 }}">{{ cat1 }}</a>
+                  <a href="{{ site.url }}/tao/#{{ cat }}" title="{{ cat }}">{{ cat }}</a>
                 </span>
                 {% endfor %}
                 </p>
@@ -74,23 +74,23 @@ comments: false
               {% endif %}
               {% endfor %}
 
-              {% for tao in paginator.tao %}
-              {% if tao.topmost != true %}
+              {% for t in paginator.tao %}
+              {% if t.topmost != true %}
               <li class="repo-list-item">
                 <h3 class="repo-list-name">
-                  <a href="{{ site.url }}{{ tao.url }}">{{ tao.title }}</a>
+                  <a href="{{ site.url }}{{ t.url }}">{{ t.title }}</a>
                 </h3>
                 <p class="repo-list-description">
-                {{ tao.excerpt | strip_html | strip }}
+                {{ t.excerpt | strip_html | strip }}
                 </p>
                 <p class="repo-list-meta">
                 <span class="meta-info">
-                  <span class="octicon octicon-calendar"></span> {{ tao.date | date: "%Y/%m/%d" }}
+                  <span class="octicon octicon-calendar"></span> {{ t.date | date: "%Y/%m/%d" }}
                 </span>
-                {% for cat in tao.cate1 %}
+                {% for cat in t.cate1 %}
                 <span class="meta-info">
                   <span class="octicon octicon-file-directory"></span>
-                  <a href="{{ site.url }}/tao/#{{ cat1 }}" title="{{ cat1 }}">{{ cat1 }}</a>
+                  <a href="{{ site.url }}/tao/#{{ cat }}" title="{{ cat }}">{{ cat }}</a>
                 </span>
                 {% endfor %}
                 </p>

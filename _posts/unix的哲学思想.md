@@ -1,9 +1,8 @@
 ---
-layout: tao
+layout: post
 title: unix的哲学思想
 date: 2022-05-05
-cate1: 编程之道
-cate2: unix的编程艺术
+categories: 编程哲学
 description: unix的艺术以及法则
 keywords: 编程艺术, unix, 哲学思想, 编程之道
 ---

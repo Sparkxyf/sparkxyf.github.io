@@ -1,8 +1,8 @@
 ---
 layout: post
-title: 运用shade实现flink-cdc的兼容.md
+title: 运用shade实现flink-cdc的兼容
 categories: 技术琐碎
-description: shade技术在flinkcdc的应用
+description: shade技术在flink-cdc的应用
 keywords: flink, shade, maven
 ---
 

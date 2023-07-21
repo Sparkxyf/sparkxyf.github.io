@@ -1,0 +1,349 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+<meta name="description" content=""/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<title>SOA架构基本原理 | spark</title>
+
+<link rel="shortcut icon" href="https://sparkxyf.github.io/favicon.ico?v=1689922788189">
+
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://sparkxyf.github.io/styles/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dockerfile.min.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.15.10/languages/dart.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"></script>
+<!-- DEMO JS -->
+<!--<script src="media/scripts/index.js"></script>-->
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css">
+</head>
+<body>
+<div class="main gt-bg-theme-color-first">
+    <nav class="navbar navbar-expand-lg">
+    <div class="navbar-brand">
+        <img class="user-avatar" src="/images/avatar.png" alt="头像">
+        <div class="site-name gt-c-content-color-first">
+            spark
+        </div>
+    </div>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars gt-c-content-color-first" style="font-size: 18px"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="navbar-nav mr-auto" style="text-align: center">
+            
+                <div class="nav-item">
+                    
+                        <a href="/" class="menu gt-a-link">
+                            首页
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/archives" class="menu gt-a-link">
+                            归档
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/tags" class="menu gt-a-link">
+                            标签
+                        </a>
+                    
+                </div>
+            
+                <div class="nav-item">
+                    
+                        <a href="/post/about" class="menu gt-a-link">
+                            关于
+                        </a>
+                    
+                </div>
+            
+        </div>
+        <div style="text-align: center">
+            <form id="gridea-search-form" style="position: relative" data-update="1689922788189" action="/search/index.html">
+                <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+                <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+        </div>
+    </div>
+</nav>
+
+    <div class="post-container">
+        <div class="post-detail gt-bg-theme-color-second">
+            <article class="gt-post-content">
+                <h2 class="post-title">
+                    SOA架构基本原理
+                </h2>
+                <div class="post-info">
+                    <time class="post-time gt-c-content-color-first">
+                        · 2023-07-21 ·
+                    </time>
+                    
+                        <a href="https://sparkxyf.github.io/tag/tao/" class="post-tags">
+                            # 编程之道
+                        </a>
+                    
+                        <a href="https://sparkxyf.github.io/tag/architecture/" class="post-tags">
+                            # 架构之道
+                        </a>
+                    
+                </div>
+                <div class="post-content">
+                    <h2 id="理解面向服务">理解面向服务</h2>
+<ul>
+<li><strong>服务</strong>：所提供的任务和功能定义合理并且与其他相关联任务相对隔离</li>
+<li>服务是一款软件程序，通过发布的API（服务契约的一部分）实现其功能的可用性</li>
+<li><strong>实现介质</strong>：基于SOAP的<strong>web服务</strong>和<strong>RESTful服务</strong></li>
+</ul>
+<h2 id="面向服务是一种设计范式">面向服务是一种设计范式</h2>
+<ul>
+<li>服务组合是服务的协同聚合</li>
+<li><strong>服务目录</strong>：描述企业内或企业内有意义部分边界中，相互依赖的服务的独立标准化和管理化的集合</li>
+<li>多个服务目录：域服务目录</li>
+</ul>
+<h2 id="面向服务元素">面向服务元素</h2>
+<ul>
+<li><strong>面向服务的解决方案逻辑</strong>通过<strong>服务</strong>和根据<strong>面向服务</strong>设计的<strong>服务组合</strong>来实现</li>
+</ul>
+<h2 id="面向服务的设计原则">面向服务的设计原则</h2>
+<ol>
+<li><strong>标准化契约服务</strong>--实现标准化契约</li>
+<li><strong>服务松耦合</strong>--减少依赖</li>
+<li><strong>服务抽象</strong>--最小化元信息的可用性</li>
+<li><strong>服务可重用性</strong>--实现通用和重用的逻辑与契约</li>
+<li><strong>服务自治</strong>--实现独立的功能边界和运行时环境</li>
+<li><strong>服务无状态</strong>--实现自适应和状态无管理逻辑</li>
+<li><strong>服务可发现性</strong>--实现交互元信息</li>
+<li><strong>服务可组合性</strong>--最大化可组合性</li>
+</ol>
+<h2 id="面向服务解决的问题">面向服务解决的问题</h2>
+<blockquote>
+<p>竖井式应用结构、大量浪费、缺乏效率、企业膨胀、产生复杂的基础设施和错综复杂的企业架构</p>
+</blockquote>
+<h2 id="面向服务的需求">面向服务的需求</h2>
+<ol>
+<li>增加大量可复用解决方案逻辑
+<ul>
+<li>逻辑服务单元封装了不属于任何应用或业务流程特有的功能</li>
+</ul>
+</li>
+<li>削减应用个性化业务逻辑</li>
+<li>削减业务逻辑的总量</li>
+<li>本征互操作性</li>
+</ol>
+<ul>
+<li>通用设计的一致性实现了自然对其的解决方案逻辑</li>
+<li>互操作性指的是数据的共享</li>
+</ul>
+<h2 id="面向服务计算的目的和优势">面向服务计算的目的和优势</h2>
+<ul>
+<li>增强本征互操作性</li>
+<li>增强联合</li>
+<li>增加供应商多元化选择</li>
+<li>同步提升业务和技术领域</li>
+<li>提高投资回报率、提高组织的业务敏捷性、减少IT成本</li>
+</ul>
+<h2 id="面向服务的4个支撑点">面向服务的4个支撑点</h2>
+<p><strong>团队合作、教育、纪律、平衡范围</strong></p>
+<h2 id="理解面向服务的架构">理解面向服务的架构</h2>
+<h3 id="soa简介soa定义">SOA简介（SOA定义）</h3>
+<ul>
+<li>有一组与面向服务的计算相关的战略目标</li>
+<li>目标代表一个特定的目标状态</li>
+<li>“服务”的逻辑单元</li>
+<li>解决方案由一个或多个服务组成</li>
+</ul>
+<h3 id="soa的四个特性">SOA的四个特性</h3>
+<ol>
+<li>业务驱动</li>
+<li>供应商中立</li>
+<li>企业中心化
+<ul>
+<li>边界之外可用</li>
+<li>既定的设计原则和企业标准</li>
+</ul>
+</li>
+<li>组合中心化</li>
+</ol>
+<h3 id="设计优先级">设计优先级</h3>
+<blockquote>
+<ul>
+<li>商业价值高于技术战略</li>
+<li>战略目标高于项目特定效益</li>
+<li>本征互操作性高于定制集成</li>
+<li>共享的服务高于特定目的的实现</li>
+<li>灵活性高于效率</li>
+<li>渐进的演化高于一开始就尽善尽美</li>
+</ul>
+</blockquote>
+<h3 id="soa的4种常见类型">SOA的4种常见类型</h3>
+<ul>
+<li>服务架构</li>
+<li>服务组合架构</li>
+<li>服务目录架构</li>
+<li>面向服务的企业架构</li>
+</ul>
+<h3 id="服务架构">服务架构</h3>
+<p>服务架构的中心是其<strong>API</strong></p>
+<p><strong>服务代理</strong>：透明地拦截和处理发送到服务或从服务发送的消息的事件驱动中介程序</p>
+<h3 id="服务组合架构">服务组合架构</h3>
+<p><strong>组合控制器</strong>：负责组合其他服务的服务</p>
+<p><strong>组合成员</strong>：被组合的服务</p>
+<h2 id="服务目录架构">服务目录架构</h2>
+<p>服务目录描述标准化架构实现的具体边界</p>
+<h2 id="面向服务的企业架构">面向服务的企业架构</h2>
+<p>当设计具有外部通行需求的服务目录环境时，目录端点模式可以发挥关键作用。</p>
+<h2 id="soa项目和生命周期">SOA项目和生命周期</h2>
+<p>自下而上与自上而下的交付策略</p>
+<h3 id="两个主要分析阶段">两个主要分析阶段</h3>
+<ul>
+<li>与业务流畅自动化相关的各个服务的更新</li>
+<li>对服务目录的集体分析</li>
+</ul>
+<h3 id="soa项目采用的计划">SOA项目采用的计划</h3>
+<ul>
+<li>计划服务目录范围和最终目标状态</li>
+<li>代表中间目标状态的里程碑</li>
+<li>完成里程碑和整体采纳工作的时间表</li>
+<li>可用资金和适当的供资模式</li>
+<li>治理系统</li>
+<li>管理系统</li>
+<li>方法</li>
+<li>风险评估</li>
+</ul>
+<h3 id="服务目录分析">服务目录分析</h3>
+<ul>
+<li>定义企业业务模型</li>
+<li>定义技术架构</li>
+<li>定义服务目录蓝图</li>
+<li>执行面向服务分析</li>
+</ul>
+<h3 id="面向服务分析服务建模">面向服务分析（服务建模）</h3>
+<ol>
+<li>定义业务自动化需求</li>
+<li>识别现有的自动化系统</li>
+<li>对候选服务进行建模</li>
+</ol>
+<h3 id="面向服务设计服务契约">面向服务设计（服务契约）</h3>
+<ol>
+<li>定制设计Web服务契约</li>
+<li>将Web服务契约导入开发环境</li>
+<li>构建底层解决方案逻辑一支持预定义的Web服务契约</li>
+</ol>
+<h3 id="服务逻辑设计">服务逻辑设计</h3>
+<h3 id="服务开发">服务开发</h3>
+<h3 id="服务测试">服务测试</h3>
+<h3 id="服务部署和维护">服务部署和维护</h3>
+<blockquote>
+<p>分布式组件</p>
+<p>服务契约文件</p>
+<p>中间价（ESB）</p>
+<p>……</p>
+</blockquote>
+<h3 id="服务使用和监控">服务使用和监控</h3>
+<h3 id="服务发现">服务发现</h3>
+<h3 id="服务版本控制和退役">服务版本控制和退役</h3>
+<h2 id="理解服务与微服务的层次">理解服务与微服务的层次</h2>
+<h3 id="服务层次简介">服务层次简介</h3>
+<p><strong>服务模型</strong></p>
+<blockquote>
+<p>任务服务</p>
+<p>微服务</p>
+<p>实体服务</p>
+<p>公共服务</p>
+</blockquote>
+<ul>
+<li>服务和候选服务能力</li>
+</ul>
+<h3 id="分解业务问题">分解业务问题</h3>
+<ul>
+<li>功能分解</li>
+<li>服务封装</li>
+<li>不可知上下文</li>
+<li>不可知能力</li>
+<li>功能抽象</li>
+<li>实体抽象</li>
+<li>非不可知上下文</li>
+<li>微任务抽象和微服务</li>
+<li>流程抽象和任务服务</li>
+</ul>
+<h3 id="构建面向服务的解决方案">构建面向服务的解决方案</h3>
+<ul>
+<li>面向服务和服务组合</li>
+<li>能力组合和能力再组合
+<ul>
+<li>能力组合</li>
+<li>能力组合与微服务</li>
+<li>能力再组合</li>
+</ul>
+</li>
+<li>逻辑集中于服务规范化</li>
+</ul>
+
+                </div>
+            </article>
+        </div>
+
+        
+
+        
+
+        
+
+        
+
+        <div class="site-footer gt-c-content-color-first">
+    <div class="slogan gt-c-content-color-first">因为不爱，所以都错</div>
+    <div class="social-container">
+        
+            
+                <a href="https://github.com/Sparkxyf" target="_blank">
+                    <i class="fab fa-github gt-c-content-color-first"></i>
+                </a>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    </div>
+    <div class="footer-info">
+        
+    </div>
+    <div>
+        Theme by <a href="https://imhanjie.com/" target="_blank">imhanjie</a>, Powered by <a
+                href="https://github.com/getgridea/gridea" target="_blank">Gridea | <a href="https://sparkxyf.github.io/atom.xml" target="_blank">RSS</a></a>
+    </div>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+    </div>
+</div>
+</body>
+</html>

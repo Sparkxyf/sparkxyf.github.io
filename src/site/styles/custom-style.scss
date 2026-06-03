@@ -1,13 +1,463 @@
 body {
-    /***
-      ADD YOUR CUSTOM STYLING HERE. (INSIDE THE body {...} section.)
-      IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
-   ***/
-    //  background-color: white;
-    //  .content {
-    //   font-size: 14px;
-    //  }
-    //  h1 {
-    //   color: black;
-    //  }
+  &:has(.spark-home) {
+    --background-primary: #11120f;
+    --background-primary-alt: #151611;
+    --background-secondary: #171812;
+    --background-secondary-alt: #1f2118;
+    --text-normal: #f4efe2;
+    --text-muted: #aaa28f;
+    --text-faint: #77705f;
+    --link-color: #d6a84f;
+    --link-color-hover: #f0c86b;
+    --text-accent: #d6a84f;
+    --text-accent-hover: #f0c86b;
+    --dg-content-max-width: 1120px;
+    --dg-content-font-size: 16px;
+    --dg-content-line-height: 1.55;
+    background:
+      linear-gradient(90deg, rgba(244, 239, 226, 0.035) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(244, 239, 226, 0.028) 1px, transparent 1px),
+      #11120f;
+    background-size: 44px 44px, 44px 44px, auto;
+  }
+
+  &:has(.spark-home) .content > header,
+  &:has(.spark-home) aside {
+    display: none;
+  }
+
+  &:has(.spark-home) main.content {
+    width: min(1120px, calc(100vw - 48px));
+    max-width: 1120px;
+    margin-top: 28px;
+    padding-bottom: 48px;
+  }
+
+  &:has(.spark-home) .filetree-sidebar,
+  &:has(.spark-home) .navbar {
+    background: rgba(17, 18, 15, 0.96);
+    color: #f4efe2;
+    border-color: rgba(244, 239, 226, 0.16);
+  }
+
+  .spark-home {
+    --spark-ink: #f4efe2;
+    --spark-muted: #aaa28f;
+    --spark-faint: #77705f;
+    --spark-line: rgba(244, 239, 226, 0.18);
+    --spark-line-strong: rgba(244, 239, 226, 0.32);
+    --spark-gold: #d6a84f;
+    --spark-green: #9fba74;
+    --spark-teal: #78bfb5;
+    --spark-rose: #d8877a;
+    --spark-violet: #a999d9;
+    --spark-panel: rgba(244, 239, 226, 0.045);
+    color: var(--spark-ink);
+    font-family: ui-serif, Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", serif;
+    letter-spacing: 0;
+  }
+
+  .spark-home * {
+    box-sizing: border-box;
+  }
+
+  .spark-home a {
+    color: inherit;
+    text-decoration-color: rgba(214, 168, 79, 0.5);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+
+  .spark-home a:hover {
+    color: var(--spark-gold);
+    text-decoration-color: var(--spark-gold);
+  }
+
+  .spark-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+    gap: 52px;
+    min-height: 62vh;
+    align-items: center;
+    padding: 24px 0 34px;
+  }
+
+  .spark-kicker {
+    margin: 0 0 14px;
+    color: var(--spark-teal);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .spark-hero h1 {
+    margin: 0;
+    color: var(--spark-ink);
+    font-size: clamp(58px, 12vw, 142px);
+    line-height: 0.86;
+    font-weight: 520;
+    letter-spacing: 0;
+  }
+
+  .spark-lede {
+    max-width: 680px;
+    margin: 28px 0 0;
+    color: var(--spark-muted);
+    font-size: clamp(18px, 2.1vw, 25px);
+    line-height: 1.72;
+  }
+
+  .spark-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 22px;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+
+  .spark-actions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 13px;
+    border: 1px solid var(--spark-line);
+    border-radius: 8px;
+    background: var(--spark-panel);
+    text-decoration: none;
+    color: var(--spark-ink);
+  }
+
+  .spark-map {
+    position: relative;
+    min-height: 420px;
+    border-top: 1px solid var(--spark-line);
+    border-bottom: 1px solid var(--spark-line);
+    overflow: hidden;
+  }
+
+  .spark-map::before,
+  .spark-map::after {
+    position: absolute;
+    left: 0;
+    right: 0;
+    color: rgba(244, 239, 226, 0.13);
+    font: 11px/1.8 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: nowrap;
+    content: "tech / trading / reading / forge / notes / systems / redis / java / data / garden /";
+  }
+
+  .spark-map::before {
+    top: 12px;
+  }
+
+  .spark-map::after {
+    bottom: 12px;
+    transform: translateX(-36px);
+  }
+
+  .spark-map svg {
+    position: absolute;
+    inset: 30px 0;
+    width: 100%;
+    height: calc(100% - 60px);
+  }
+
+  .spark-map path,
+  .spark-map line {
+    stroke: rgba(244, 239, 226, 0.25);
+    stroke-width: 1.2;
+    fill: none;
+  }
+
+  .spark-map text {
+    fill: var(--spark-ink);
+    font: 600 15px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+  }
+
+  .spark-map .subtext {
+    fill: var(--spark-faint);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .spark-node {
+    fill: rgba(214, 168, 79, 0.22);
+    stroke: var(--spark-gold);
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
+  }
+
+  .spark-node-tech {
+    fill: rgba(120, 191, 181, 0.18);
+    stroke: var(--spark-teal);
+  }
+
+  .spark-node-data {
+    fill: rgba(159, 186, 116, 0.18);
+    stroke: var(--spark-green);
+  }
+
+  .spark-node-reading {
+    fill: rgba(216, 135, 122, 0.18);
+    stroke: var(--spark-rose);
+  }
+
+  .spark-node-forge {
+    fill: rgba(169, 153, 217, 0.2);
+    stroke: var(--spark-violet);
+  }
+
+  .spark-section {
+    padding: 34px 0 46px;
+    border-top: 1px solid var(--spark-line);
+  }
+
+  .spark-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .spark-section h2 {
+    margin: 0;
+    color: var(--spark-ink);
+    font-size: clamp(26px, 4vw, 44px);
+    line-height: 1;
+    font-weight: 520;
+    letter-spacing: 0;
+  }
+
+  .spark-section-head p {
+    max-width: 430px;
+    margin: 0;
+    color: var(--spark-muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .spark-index-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px;
+  }
+
+  .spark-cluster {
+    min-width: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--spark-line-strong);
+  }
+
+  .spark-cluster h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 12px;
+    color: var(--spark-ink);
+    font: 700 14px/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .spark-cluster h3 span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--spark-gold);
+  }
+
+  .spark-cluster:nth-child(2) h3 span {
+    background: var(--spark-green);
+  }
+
+  .spark-cluster:nth-child(3) h3 span {
+    background: var(--spark-teal);
+  }
+
+  .spark-cluster:nth-child(4) h3 span {
+    background: var(--spark-rose);
+  }
+
+  .spark-cluster ul {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .spark-cluster li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 10px;
+    min-height: 26px;
+    color: var(--spark-muted);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .spark-cluster li a,
+  .spark-cluster li span {
+    overflow-wrap: anywhere;
+  }
+
+  .spark-cluster li em {
+    color: var(--spark-faint);
+    font: 11px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-style: normal;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .spark-cluster li:first-child em {
+    color: var(--spark-gold);
+  }
+
+  .spark-paths,
+  .spark-state-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .spark-paths article {
+    min-height: 150px;
+    padding: 18px;
+    border: 1px solid var(--spark-line);
+    border-radius: 8px;
+    background: var(--spark-panel);
+  }
+
+  .spark-paths strong {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--spark-ink);
+    font: 700 13px/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .spark-paths p {
+    margin: 0;
+    color: var(--spark-muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .spark-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    margin-top: 8px;
+  }
+
+  .spark-cloud a,
+  .spark-cloud span {
+    color: rgba(244, 239, 226, 0.72);
+    font-size: clamp(16px, 2vw, 24px);
+    text-decoration: none;
+  }
+
+  .spark-cloud .xl {
+    color: var(--spark-gold);
+    font-size: clamp(24px, 4vw, 44px);
+  }
+
+  .spark-cloud .lg {
+    color: var(--spark-teal);
+    font-size: clamp(20px, 3vw, 34px);
+  }
+
+  .spark-cloud .md {
+    color: var(--spark-green);
+    font-size: clamp(18px, 2.5vw, 28px);
+  }
+
+  .spark-state-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .spark-state-grid div {
+    padding: 16px 0;
+    border-top: 1px solid var(--spark-line-strong);
+  }
+
+  .spark-state-grid b {
+    display: block;
+    color: var(--spark-ink);
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 520;
+  }
+
+  .spark-state-grid span {
+    display: block;
+    margin-top: 8px;
+    color: var(--spark-muted);
+    font: 12px/1.3 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .spark-node {
+      animation: spark-pulse 5s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .spark-node:nth-of-type(2n) {
+      animation-delay: -1.6s;
+    }
+
+    @keyframes spark-pulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+  }
+
+  @media (max-width: 1000px) {
+    &:has(.spark-home) main.content {
+      width: min(100% - 28px, 1120px);
+      margin-top: 18px;
+    }
+
+    .spark-hero {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      gap: 30px;
+    }
+
+    .spark-map {
+      min-height: 330px;
+    }
+
+    .spark-index-grid,
+    .spark-paths,
+    .spark-state-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .spark-section-head {
+      display: block;
+    }
+
+    .spark-section-head p {
+      margin-top: 12px;
+    }
+
+    .spark-index-grid,
+    .spark-paths,
+    .spark-state-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 }

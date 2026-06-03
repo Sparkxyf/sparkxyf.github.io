@@ -36,6 +36,11 @@ jobs:
       - name: Build Eleventy site
         run: npm run build
 
+      - name: Copy original image assets
+        run: |
+          mkdir -p dist/img
+          cp -R src/site/img/. dist/img/
+
       - name: Disable Jekyll for static output
         run: touch dist/.nojekyll
 

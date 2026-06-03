@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spark | 电子花园</title>
+  <meta name="description" content="Spark 的电子花园：技术笔记、交易与数据、阅读札记和工具实验。">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11120f;
+      --ink: #f4efe2;
+      --muted: #aaa28f;
+      --faint: #77705f;
+      --line: rgba(244, 239, 226, 0.18);
+      --line-strong: rgba(244, 239, 226, 0.32);
+      --gold: #d6a84f;
+      --green: #9fba74;
+      --teal: #78bfb5;
+      --rose: #d8877a;
+      --violet: #a999d9;
+      --panel: rgba(244, 239, 226, 0.045);
+      --panel-strong: rgba(244, 239, 226, 0.075);
+      --shadow: rgba(0, 0, 0, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(244, 239, 226, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(244, 239, 226, 0.028) 1px, transparent 1px),
+        #11120f;
+      background-size: 44px 44px, 44px 44px, auto;
+      color: var(--ink);
+      font-family: ui-serif, Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", serif;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration-color: rgba(214, 168, 79, 0.5);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+
+    a:hover {
+      color: var(--gold);
+      text-decoration-color: var(--gold);
+    }
+
+    .site {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 0 18px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+
+    .brand {
+      color: var(--ink);
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 14px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--muted);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+      gap: 52px;
+      min-height: 68vh;
+      align-items: center;
+      padding: 48px 0 32px;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--teal);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(58px, 12vw, 142px);
+      line-height: 0.86;
+      font-weight: 520;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      max-width: 680px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2.1vw, 25px);
+      line-height: 1.72;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      max-width: 620px;
+      margin-top: 30px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: rgba(17, 18, 15, 0.74);
+      box-shadow: 0 18px 50px var(--shadow);
+    }
+
+    .search-row svg {
+      width: 18px;
+      height: 18px;
+      color: var(--gold);
+    }
+
+    .search-row input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font: 16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .search-row input::placeholder {
+      color: var(--faint);
+    }
+
+    .match-count {
+      color: var(--faint);
+      font: 12px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      white-space: nowrap;
+    }
+
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+
+    .quick-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .map-panel {
+      position: relative;
+      min-height: 420px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .map-panel::before,
+    .map-panel::after {
+      position: absolute;
+      left: 0;
+      right: 0;
+      color: rgba(244, 239, 226, 0.13);
+      font: 11px/1.8 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: nowrap;
+      content: "tech / trading / reading / forge / notes / systems / redis / java / data / garden /";
+    }
+
+    .map-panel::before {
+      top: 12px;
+    }
+
+    .map-panel::after {
+      bottom: 12px;
+      transform: translateX(-36px);
+    }
+
+    .garden-map {
+      position: absolute;
+      inset: 30px 0;
+      width: 100%;
+      height: calc(100% - 60px);
+    }
+
+    .garden-map text {
+      fill: var(--ink);
+      font: 600 15px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .garden-map .subtext {
+      fill: var(--faint);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .garden-map path,
+    .garden-map line {
+      stroke: rgba(244, 239, 226, 0.25);
+      stroke-width: 1.2;
+      fill: none;
+    }
+
+    .garden-map circle {
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
+    }
+
+    .section {
+      padding: 34px 0 46px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .section h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(26px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 520;
+    }
+
+    .section-note {
+      max-width: 420px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .index-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 28px;
+    }
+
+    .cluster {
+      min-width: 0;
+      padding-top: 14px;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .cluster h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 12px;
+      color: var(--ink);
+      font: 700 14px/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .cluster h3 span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    .cluster:nth-child(2) h3 span {
+      background: var(--green);
+    }
+
+    .cluster:nth-child(3) h3 span {
+      background: var(--teal);
+    }
+
+    .cluster:nth-child(4) h3 span {
+      background: var(--rose);
+    }
+
+    .entries {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .entry {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 10px;
+      min-height: 26px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .entry a,
+    .entry .name {
+      overflow-wrap: anywhere;
+    }
+
+    .entry .status {
+      color: var(--faint);
+      font: 11px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .entry.published .status {
+      color: var(--gold);
+    }
+
+    .entry[hidden] {
+      display: none;
+    }
+
+    .paths {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+    }
+
+    .path {
+      min-height: 150px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .path strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--ink);
+      font: 700 13px/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .path p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      margin-top: 8px;
+    }
+
+    .cloud a,
+    .cloud span {
+      color: rgba(244, 239, 226, 0.72);
+      font-size: clamp(16px, 2vw, 24px);
+      text-decoration: none;
+    }
+
+    .cloud .xl {
+      color: var(--gold);
+      font-size: clamp(24px, 4vw, 44px);
+    }
+
+    .cloud .lg {
+      color: var(--teal);
+      font-size: clamp(20px, 3vw, 34px);
+    }
+
+    .cloud .md {
+      color: var(--green);
+      font-size: clamp(18px, 2.5vw, 28px);
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .state {
+      padding: 16px 0;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .state b {
+      display: block;
+      color: var(--ink);
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 520;
+    }
+
+    .state span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font: 12px/1.3 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 26px 0 36px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font: 13px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .map-node {
+        animation: pulse 5s ease-in-out infinite;
+        transform-origin: center;
+      }
+
+      .map-node:nth-of-type(2n) {
+        animation-delay: -1.6s;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+      }
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        gap: 30px;
+      }
+
+      .map-panel {
+        min-height: 330px;
+      }
+
+      .index-grid,
+      .paths,
+      .state-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .site {
+        width: min(100% - 24px, 1120px);
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .hero {
+        padding-top: 34px;
+      }
+
+      .search-row {
+        grid-template-columns: 24px minmax(0, 1fr);
+      }
+
+      .match-count {
+        grid-column: 2;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-note {
+        margin-top: 12px;
+      }
+
+      .index-grid,
+      .paths,
+      .state-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="site">
+    <header class="topbar" aria-label="Site navigation">
+      <a class="brand" href="/">Spark</a>
+      <nav class="nav">
+        <a href="#index">Index</a>
+        <a href="#paths">Paths</a>
+        <a href="#cloud">Cloud</a>
+        <a href="#state">State</a>
+        <a href="https://github.com/Sparkxyf/sparkxyf.github.io">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <p class="kicker">Digital Garden / Public Notes</p>
+        <h1 id="title">Spark</h1>
+        <p class="lede">一个慢慢长出来的知识入口：技术笔记、工程经验、交易与数据、阅读札记，以及还在发芽的想法。</p>
+        <label class="search-row" for="garden-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m1.3-5.2a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="garden-search" type="search" autocomplete="off" placeholder="搜索笔记、主题、标签">
+          <span class="match-count" id="match-count">16 entries</span>
+        </label>
+        <div class="quick-links">
+          <a href="/tech/Redis%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">Redis 性能优化</a>
+          <a href="#index">浏览索引</a>
+          <a href="#paths">查看路径</a>
+        </div>
+      </div>
+
+      <div class="map-panel" aria-label="Knowledge map">
+        <svg class="garden-map" viewBox="0 0 640 420" role="img" aria-labelledby="map-title">
+          <title id="map-title">Spark 知识花园地图</title>
+          <path d="M120 210 C190 110 290 92 384 132 C482 174 506 282 420 332 C318 392 182 342 120 210Z"/>
+          <path d="M154 118 C242 204 374 234 498 162"/>
+          <path d="M148 304 C252 240 352 214 486 292"/>
+          <line x1="320" y1="210" x2="154" y2="118"/>
+          <line x1="320" y1="210" x2="498" y2="162"/>
+          <line x1="320" y1="210" x2="148" y2="304"/>
+          <line x1="320" y1="210" x2="486" y2="292"/>
+          <circle class="map-node" cx="320" cy="210" r="48" fill="rgba(214,168,79,.22)" stroke="#d6a84f"/>
+          <circle class="map-node" cx="154" cy="118" r="32" fill="rgba(120,191,181,.18)" stroke="#78bfb5"/>
+          <circle class="map-node" cx="498" cy="162" r="35" fill="rgba(159,186,116,.18)" stroke="#9fba74"/>
+          <circle class="map-node" cx="148" cy="304" r="34" fill="rgba(216,135,122,.18)" stroke="#d8877a"/>
+          <circle class="map-node" cx="486" cy="292" r="30" fill="rgba(169,153,217,.2)" stroke="#a999d9"/>
+          <text x="320" y="207" text-anchor="middle">Spark</text>
+          <text x="320" y="226" text-anchor="middle" class="subtext">garden</text>
+          <text x="154" y="116" text-anchor="middle">Tech</text>
+          <text x="154" y="133" text-anchor="middle" class="subtext">systems</text>
+          <text x="498" y="160" text-anchor="middle">Data</text>
+          <text x="498" y="177" text-anchor="middle" class="subtext">trading</text>
+          <text x="148" y="302" text-anchor="middle">Reading</text>
+          <text x="148" y="319" text-anchor="middle" class="subtext">notes</text>
+          <text x="486" y="291" text-anchor="middle">Forge</text>
+          <text x="486" y="308" text-anchor="middle" class="subtext">tools</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="section" id="index">
+      <div class="section-head">
+        <h2>The Index</h2>
+        <p class="section-note">按主题进入，而不是按发布时间排队。已经发布的文章会直接跳转，种子条目会继续长成独立页面。</p>
+      </div>
+      <div class="index-grid">
+        <section class="cluster" data-cluster>
+          <h3>Technology <span></span></h3>
+          <ul class="entries">
+            <li class="entry published" data-search="redis 性能 优化 tech backend cache"><a href="/tech/Redis%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">Redis 性能优化</a><span class="status">published</span></li>
+            <li class="entry" data-search="java 数据结构 算法 collection leetcode"><span class="name">Java 数据结构与算法</span><span class="status">seed</span></li>
+            <li class="entry" data-search="system design performance backend"><span class="name">系统设计与性能调优</span><span class="status">seed</span></li>
+            <li class="entry" data-search="backend engineering spring maven oss"><span class="name">后端工程实践</span><span class="status">seed</span></li>
+          </ul>
+        </section>
+
+        <section class="cluster" data-cluster>
+          <h3>Data <span></span></h3>
+          <ul class="entries">
+            <li class="entry" data-search="stock 股票 数据 tushare"><span class="name">股票数据整理</span><span class="status">seed</span></li>
+            <li class="entry" data-search="tushare downloader pipeline csv"><span class="name">Tushare 数据管线</span><span class="status">seed</span></li>
+            <li class="entry" data-search="trading review 交易 复盘"><span class="name">交易复盘</span><span class="status">seed</span></li>
+            <li class="entry" data-search="metrics backtest 指标 回测"><span class="name">指标与回测</span><span class="status">seed</span></li>
+          </ul>
+        </section>
+
+        <section class="cluster" data-cluster>
+          <h3>Reading <span></span></h3>
+          <ul class="entries">
+            <li class="entry" data-search="books reading highlights"><span class="name">读书摘录</span><span class="status">seed</span></li>
+            <li class="entry" data-search="essay long notes writing"><span class="name">长文笔记</span><span class="status">seed</span></li>
+            <li class="entry" data-search="ideas concepts index"><span class="name">观点索引</span><span class="status">seed</span></li>
+            <li class="entry" data-search="book list reading map"><span class="name">主题书单</span><span class="status">seed</span></li>
+          </ul>
+        </section>
+
+        <section class="cluster" data-cluster>
+          <h3>Forge <span></span></h3>
+          <ul class="entries">
+            <li class="entry" data-search="blog digital garden github pages obsidian"><span class="name">博客与数字花园</span><span class="status">growing</span></li>
+            <li class="entry" data-search="automation tools workflow"><span class="name">自动化工具</span><span class="status">seed</span></li>
+            <li class="entry" data-search="project lab experiments"><span class="name">小项目记录</span><span class="status">seed</span></li>
+            <li class="entry" data-search="writing system markdown obsidian"><span class="name">写作系统</span><span class="status">seed</span></li>
+          </ul>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" id="paths">
+      <div class="section-head">
+        <h2>Paths</h2>
+        <p class="section-note">首页先给出几条清晰路线，之后每条路线都可以扩展成专题地图。</p>
+      </div>
+      <div class="paths">
+        <article class="path">
+          <strong>Now</strong>
+          <p>最近入口放在技术区，从 Redis 性能优化开始，把工程笔记整理成可回访的知识节点。</p>
+        </article>
+        <article class="path">
+          <strong>Next</strong>
+          <p>继续补 Java 算法、股票数据、博客发布流程，把零散主题接到稳定索引里。</p>
+        </article>
+        <article class="path">
+          <strong>Long Arc</strong>
+          <p>把笔记当作长期系统维护：主题相互连接，读完一篇能自然走到下一篇。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="cloud">
+      <div class="section-head">
+        <h2>Cloud</h2>
+        <p class="section-note">像 Hermitage 的随机漫游区一样，给主题一个可以扫视、跳转、偶遇的位置。</p>
+      </div>
+      <div class="cloud" aria-label="Tag cloud">
+        <a class="xl" href="/tech/Redis%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">Redis</a>
+        <span class="lg">Java</span>
+        <span class="md">Stock</span>
+        <span>Obsidian</span>
+        <span class="lg">Tushare</span>
+        <span>GitHub Pages</span>
+        <span class="md">Backend</span>
+        <span>Reading</span>
+        <span class="lg">Tools</span>
+        <span>Markdown</span>
+        <span class="md">Systems</span>
+        <span>Writing</span>
+      </div>
+    </section>
+
+    <section class="section" id="state">
+      <div class="section-head">
+        <h2>State</h2>
+        <p class="section-note">先把首页从模板说明变成真正的花园门面，再逐步让内容长满。</p>
+      </div>
+      <div class="state-grid">
+        <div class="state"><b>1</b><span>published note</span></div>
+        <div class="state"><b>4</b><span>topic areas</span></div>
+        <div class="state"><b>16</b><span>index entries</span></div>
+        <div class="state"><b>12</b><span>cloud signals</span></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Spark 的电子花园</span>
+      <span>Built on GitHub Pages, grown from Obsidian notes.</span>
+    </footer>
+  </main>
+
+  <script>
+    const search = document.querySelector("#garden-search");
+    const entries = Array.from(document.querySelectorAll(".entry"));
+    const clusters = Array.from(document.querySelectorAll("[data-cluster]"));
+    const matchCount = document.querySelector("#match-count");
+
+    function applyFilter() {
+      const query = search.value.trim().toLowerCase();
+      let visible = 0;
+
+      entries.forEach((entry) => {
+        const text = entry.textContent.toLowerCase() + " " + (entry.dataset.search || "");
+        const match = !query || text.includes(query);
+        entry.hidden = !match;
+        if (match) visible += 1;
+      });
+
+      clusters.forEach((cluster) => {
+        const hasVisibleEntry = Array.from(cluster.querySelectorAll(".entry")).some((entry) => !entry.hidden);
+        cluster.hidden = !hasVisibleEntry;
+      });
+
+      matchCount.textContent = query ? `${visible} matches` : `${entries.length} entries`;
+    }
+
+    search.addEventListener("input", applyFilter);
+    window.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        search.focus();
+      }
+    });
+    applyFilter();
+  </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -30,8 +30,11 @@ jobs:
           node-version: "22.x"
           cache: "npm"
 
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Eleventy site
         run: npm run build
@@ -39,55 +42,113 @@ jobs:
       - name: Copy original image assets
         run: |
           mkdir -p dist/img
-          cp -R src/site/img/. dist/img/
+          if [ -d src/site/img ]; then
+            cp -R src/site/img/. dist/img/
+          fi
 
       - name: Disable Jekyll for static output
         run: touch dist/.nojekyll
 
-      - name: Verify image assets
+      - name: Verify generated site and image assets
         run: |
           node <<'NODE'
           const fs = require("fs");
           const path = require("path");
 
-          const htmlFiles = [];
-          const walk = (dir) => {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const fullPath = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                walk(fullPath);
-              } else if (entry.isFile() && fullPath.endsWith(".html")) {
-                htmlFiles.push(fullPath);
-              }
-            }
+          const fail = (message, details = []) => {
+            console.error(message);
+            for (const detail of details) console.error(`- ${detail}`);
+            process.exit(1);
           };
 
-          walk("dist");
+          const exists = (file) => fs.existsSync(file);
+          const read = (file) => fs.readFileSync(file, "utf8");
+          const walk = (dir, predicate = () => true) => {
+            const results = [];
+            if (!exists(dir)) return results;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const fullPath = path.join(dir, entry.name);
+              if (entry.isDirectory()) results.push(...walk(fullPath, predicate));
+              else if (entry.isFile() && predicate(fullPath)) results.push(fullPath);
+            }
+            return results;
+          };
 
+          const requiredFiles = [
+            "dist/index.html",
+            "dist/styles/digital-garden-base.css",
+            "dist/styles/custom-style.css",
+          ];
+          const missingRequired = requiredFiles.filter((file) => !exists(file));
+          if (missingRequired.length) fail("Missing required generated files:", missingRequired);
+
+          const indexHtml = read("dist/index.html");
+          if (!indexHtml.includes("/styles/digital-garden-base.css")) {
+            fail("The homepage was not generated with the Digital Garden template.");
+          }
+          if (indexHtml.includes("Jekyll v")) {
+            fail("The generated homepage unexpectedly contains GitHub/Jekyll output.");
+          }
+
+          const sourceImages = walk("src/site/img", (file) => /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(file));
+          const missingCopiedImages = sourceImages
+            .map((file) => path.relative("src/site/img", file))
+            .filter((relative) => !exists(path.join("dist/img", relative)));
+          if (missingCopiedImages.length) {
+            fail("Image files exist in src/site/img but were not copied to dist/img:", missingCopiedImages);
+          }
+
+          const noteFiles = walk("src/site/notes", (file) => file.endsWith(".md"));
+          const unresolvedNoteImages = [];
+          for (const note of noteFiles) {
+            const markdown = read(note);
+            const noteDir = path.dirname(note);
+            for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+              const rawUrl = match[1].trim().replace(/^<|>$/g, "").split(/[?#]/)[0];
+              if (!rawUrl || /^(https?:|data:)/i.test(rawUrl)) continue;
+
+              const candidates = [];
+              if (rawUrl.startsWith("/img/")) {
+                candidates.push(path.join("src/site", rawUrl));
+                candidates.push(path.join("dist", rawUrl));
+              } else if (rawUrl.startsWith("img/")) {
+                candidates.push(path.join("src/site", rawUrl));
+                candidates.push(path.join("dist", rawUrl));
+              } else {
+                candidates.push(path.join(noteDir, rawUrl));
+                const relativeNoteDir = path.relative("src/site/notes", noteDir);
+                candidates.push(path.join("src/site/img/user", relativeNoteDir, rawUrl));
+                candidates.push(path.join("dist/img/user", relativeNoteDir, rawUrl));
+              }
+
+              if (!candidates.some(exists)) unresolvedNoteImages.push(`${note}: ${rawUrl}`);
+            }
+          }
+          if (unresolvedNoteImages.length) {
+            fail("Markdown image references do not resolve to source or dist assets:", unresolvedNoteImages);
+          }
+
+          const htmlFiles = walk("dist", (file) => file.endsWith(".html"));
           const refs = new Set();
           for (const file of htmlFiles) {
-            const html = fs.readFileSync(file, "utf8");
+            const html = read(file);
             for (const match of html.matchAll(/\b(?:src|href)=["'](\/img\/[^"']+)["']/g)) {
               refs.add(match[1].split(/[?#]/)[0]);
             }
             for (const match of html.matchAll(/\bsrcset=["']([^"']+)["']/g)) {
               for (const candidate of match[1].split(",")) {
                 const url = candidate.trim().split(/\s+/)[0];
-                if (url.startsWith("/img/")) {
-                  refs.add(url.split(/[?#]/)[0]);
-                }
+                if (url.startsWith("/img/")) refs.add(url.split(/[?#]/)[0]);
               }
             }
           }
 
-          const missing = [...refs].filter((ref) => !fs.existsSync(path.join("dist", ref)));
-          if (missing.length) {
-            console.error("Missing image assets:");
-            for (const ref of missing) console.error(`- ${ref}`);
-            process.exit(1);
+          const missingReferencedImages = [...refs].filter((ref) => !exists(path.join("dist", ref)));
+          if (missingReferencedImages.length) {
+            fail("Generated HTML references missing image assets:", missingReferencedImages);
           }
 
-          console.log(`Verified ${refs.size} image asset reference(s).`);
+          console.log(`Verified ${htmlFiles.length} HTML file(s), ${sourceImages.length} source image(s), and ${refs.size} generated image reference(s).`);
           NODE
 
       - name: Upload Pages artifact

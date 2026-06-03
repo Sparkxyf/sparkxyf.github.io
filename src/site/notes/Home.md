@@ -12,7 +12,7 @@
 
 ### 技术
 
-> [[tech/Redis性能优化|Redis 性能优化]]
+> [Redis 性能优化](/tech/Redis性能优化/)
 
 ### 数据与交易
 

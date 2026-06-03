@@ -170,3 +170,27 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify live Pages deployment
+        run: |
+          set -euo pipefail
+          site_url="${{ steps.deployment.outputs.page_url }}"
+          home_html="$(mktemp)"
+          redis_html="$(mktemp)"
+
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "${site_url}" --output "$home_html"
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "${site_url}tech/Redis%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" --output "$redis_html"
+
+          if grep -q "Jekyll v" "$home_html" "$redis_html"; then
+            echo "Live site is still being served by GitHub/Jekyll instead of the Eleventy artifact." >&2
+            exit 1
+          fi
+
+          if ! grep -q "/styles/digital-garden-base.css" "$home_html"; then
+            echo "Live homepage does not contain the Digital Garden template CSS." >&2
+            exit 1
+          fi
+
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors \
+            "${site_url}img/user/tech/assets/3997165161.png" \
+            --output /tmp/redis-image.png

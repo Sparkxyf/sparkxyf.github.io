@@ -1,5 +1,5 @@
 ---
-{"dg-publish":true,"dg-home":true,"permalink":"/","tags":["gardenEntry","garden","home"],"dg-note-properties":{"tags":["gardenEntry","garden","home"]}}
+{"dg-publish":true,"dg-home":true,"permalink":"/","title":"Spark","tags":["gardenEntry","garden","home"],"dg-note-properties":{"tags":["gardenEntry","garden","home"]}}
 ---
 
 <div class="spark-home">

@@ -1,5 +1,5 @@
 ---
-{"dg-publish":true,"permalink":"/Home/","title":"Spark","tags":["home","gardenEntry"],"dgShowToc":true,"dg-note-properties":{"title":"Spark","tags":["home","gardenEntry"]}}
+{"dg-publish":true,"permalink":"/Home/","tags":["home","gardenEntry"],"dgShowToc":true,"dg-note-properties":{"tags":["home","gardenEntry"]}}
 ---
 
 

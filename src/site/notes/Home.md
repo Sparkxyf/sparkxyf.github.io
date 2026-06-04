@@ -2,9 +2,6 @@
 {"dg-publish":true,"permalink":"/Home/","tags":["home","gardenEntry"],"dgShowToc":true,"dg-note-properties":{"tags":["home","gardenEntry"]}}
 ---
 
-
-# Spark
-
 这里是我的公开笔记目录。内容会先以笔记形态生长，再逐步整理成专题。
 
 ---

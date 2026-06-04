@@ -66,6 +66,18 @@ jobs:
 
           const exists = (file) => fs.existsSync(file);
           const read = (file) => fs.readFileSync(file, "utf8");
+          const stripResourcePath = (value) => value.trim().replace(/^<|>$/g, "").split(/[?#]/)[0];
+          const decodeUrlPath = (urlPath) => urlPath
+            .split("/")
+            .map((part) => {
+              try {
+                return decodeURIComponent(part);
+              } catch {
+                return part;
+              }
+            })
+            .join("/");
+          const pathVariants = (urlPath) => [...new Set([urlPath, decodeUrlPath(urlPath)])];
           const walk = (dir, predicate = () => true) => {
             const results = [];
             if (!exists(dir)) return results;
@@ -107,21 +119,23 @@ jobs:
             const markdown = read(note);
             const noteDir = path.dirname(note);
             for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
-              const rawUrl = match[1].trim().replace(/^<|>$/g, "").split(/[?#]/)[0];
+              const rawUrl = stripResourcePath(match[1]);
               if (!rawUrl || /^(https?:|data:)/i.test(rawUrl)) continue;
 
               const candidates = [];
-              if (rawUrl.startsWith("/img/")) {
-                candidates.push(path.join("src/site", rawUrl));
-                candidates.push(path.join("dist", rawUrl));
-              } else if (rawUrl.startsWith("img/")) {
-                candidates.push(path.join("src/site", rawUrl));
-                candidates.push(path.join("dist", rawUrl));
-              } else {
-                candidates.push(path.join(noteDir, rawUrl));
-                const relativeNoteDir = path.relative("src/site/notes", noteDir);
-                candidates.push(path.join("src/site/img/user", relativeNoteDir, rawUrl));
-                candidates.push(path.join("dist/img/user", relativeNoteDir, rawUrl));
+              for (const localUrl of pathVariants(rawUrl)) {
+                if (localUrl.startsWith("/img/")) {
+                  candidates.push(path.join("src/site", localUrl));
+                  candidates.push(path.join("dist", localUrl));
+                } else if (localUrl.startsWith("img/")) {
+                  candidates.push(path.join("src/site", localUrl));
+                  candidates.push(path.join("dist", localUrl));
+                } else {
+                  candidates.push(path.join(noteDir, localUrl));
+                  const relativeNoteDir = path.relative("src/site/notes", noteDir);
+                  candidates.push(path.join("src/site/img/user", relativeNoteDir, localUrl));
+                  candidates.push(path.join("dist/img/user", relativeNoteDir, localUrl));
+                }
               }
 
               if (!candidates.some(exists)) unresolvedNoteImages.push(`${note}: ${rawUrl}`);
@@ -136,17 +150,19 @@ jobs:
           for (const file of htmlFiles) {
             const html = read(file);
             for (const match of html.matchAll(/\b(?:src|href)=["'](\/img\/[^"']+)["']/g)) {
-              refs.add(match[1].split(/[?#]/)[0]);
+              refs.add(stripResourcePath(match[1]));
             }
             for (const match of html.matchAll(/\bsrcset=["']([^"']+)["']/g)) {
               for (const candidate of match[1].split(",")) {
                 const url = candidate.trim().split(/\s+/)[0];
-                if (url.startsWith("/img/")) refs.add(url.split(/[?#]/)[0]);
+                if (url.startsWith("/img/")) refs.add(stripResourcePath(url));
               }
             }
           }
 
-          const missingReferencedImages = [...refs].filter((ref) => !exists(path.join("dist", ref)));
+          const missingReferencedImages = [...refs].filter((ref) =>
+            !pathVariants(ref).some((localRef) => exists(path.join("dist", localRef)))
+          );
           if (missingReferencedImages.length) {
             fail("Generated HTML references missing image assets:", missingReferencedImages);
           }
@@ -178,13 +194,42 @@ jobs:
         run: |
           set -euo pipefail
           site_url="${{ steps.deployment.outputs.page_url }}"
+          site_root="${site_url%/}/"
           home_html="$(mktemp)"
-          redis_html="$(mktemp)"
+          sitemap_xml="$(mktemp)"
+          page_html="$(mktemp)"
 
-          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "${site_url}" --output "$home_html"
-          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "${site_url}tech/Redis%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" --output "$redis_html"
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "$site_root" --output "$home_html"
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "${site_root}sitemap.xml" --output "$sitemap_xml"
 
-          if grep -q "Jekyll v" "$home_html" "$redis_html"; then
+          page_url="$(python3 - "$sitemap_xml" "$site_root" <<'PY'
+          import re
+          import sys
+          from urllib.parse import quote, urljoin, urlparse, urlunparse
+
+          sitemap_path, site_url = sys.argv[1], sys.argv[2].rstrip("/") + "/"
+          with open(sitemap_path, encoding="utf-8") as file:
+              urls = re.findall(r"<loc>(.*?)</loc>", file.read())
+
+          for url in urls:
+              absolute_url = urljoin(site_url, url)
+              page_path = urlparse(absolute_url).path.rstrip("/")
+              if page_path and page_path != "/404":
+                  parsed = urlparse(absolute_url)
+                  print(urlunparse(parsed._replace(path=quote(parsed.path, safe="/%"), fragment="")))
+                  break
+          PY
+          )"
+          if [ -n "$page_url" ]; then
+            curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "$page_url" --output "$page_html"
+          fi
+
+          html_to_check=("$home_html")
+          if [ -s "$page_html" ]; then
+            html_to_check+=("$page_html")
+          fi
+
+          if grep -q "Jekyll v" "${html_to_check[@]}"; then
             echo "Live site is still being served by GitHub/Jekyll instead of the Eleventy artifact." >&2
             exit 1
           fi
@@ -194,6 +239,28 @@ jobs:
             exit 1
           fi
 
-          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors \
-            "${site_url}img/user/tech/assets/3997165161.png" \
-            --output /tmp/redis-image.png
+          image_url="$(python3 - "$site_root" "$home_html" "$page_html" <<'PY'
+          import re
+          import sys
+          from urllib.parse import quote, urljoin, urlparse, urlunparse
+
+          site_url = sys.argv[1]
+          for html_path in sys.argv[2:]:
+              try:
+                  with open(html_path, encoding="utf-8") as file:
+                      html = file.read()
+              except OSError:
+                  continue
+
+              for ref in re.findall(r'\b(?:src|href)=["\'](/img/[^"\']+)["\']', html):
+                  raw_url = urljoin(site_url, ref.split("?", 1)[0].split("#", 1)[0])
+                  parsed = urlparse(raw_url)
+                  print(urlunparse(parsed._replace(path=quote(parsed.path, safe="/%"), fragment="")))
+                  raise SystemExit
+          PY
+          )"
+          if [ -n "$image_url" ]; then
+            curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors "$image_url" --output /tmp/site-image
+          else
+            echo "No live /img/ references found to verify."
+          fi

@@ -1,6 +1,11 @@
 const yaml = require("yaml");
 const { parseExpression } = require("./exprParser");
-const { evalExpr, evalFilter } = require("./exprEval");
+const { evalExpr, evalFilter, resolveFileProperty, coerceDate } = require("./exprEval");
+const {
+	parseWikilink,
+	createNoteIndex,
+	wikilinkDisplayTitle,
+} = require("./noteLinks");
 
 /**
  * Get a user property from metadata, checking "dg-note-properties" first.
@@ -35,9 +40,10 @@ function executeBaseQuery(yamlContent, notes) {
 	const formulas = parsed.formulas || {};
 	const properties = parsed.properties || {};
 	const globalSummaries = parsed.summaries || {};
+	const noteIndex = createNoteIndex(notes);
 
 	const views = parsed.views.map((viewDef) => {
-		return processView(viewDef, notes, globalFilters, formulas, globalSummaries);
+		return processView(viewDef, notes, globalFilters, formulas, globalSummaries, noteIndex);
 	});
 
 	return { properties, views };
@@ -46,7 +52,7 @@ function executeBaseQuery(yamlContent, notes) {
 /**
  * Process a single view definition.
  */
-function processView(viewDef, notes, globalFilters, formulas, globalSummaries) {
+function processView(viewDef, notes, globalFilters, formulas, globalSummaries, noteIndex) {
 	const config = {
 		type: viewDef.type || "table",
 		name: viewDef.name || "Untitled",
@@ -74,7 +80,11 @@ function processView(viewDef, notes, globalFilters, formulas, globalSummaries) {
 		}
 	});
 
-	let rows = notes.map((note) => {
+	// dg-hide notes are published but kept out of navigation, so bases
+	// shouldn't list them either
+	const visibleNotes = notes.filter((note) => !(note.metadata && note.metadata.hide === true));
+
+	let rows = visibleNotes.map((note) => {
 		const computed = {};
 		for (const [key, ast] of parsedFormulas) {
 			try {
@@ -97,12 +107,12 @@ function processView(viewDef, notes, globalFilters, formulas, globalSummaries) {
 	}
 
 	// 4. Sort
-	rows = applySorting(rows, config);
+	rows = applySorting(rows, config, noteIndex);
 
 	// 5. Group
 	let groups = null;
 	if (config.groupBy) {
-		groups = applyGrouping(rows, config.groupBy);
+		groups = applyGrouping(rows, config.groupBy, noteIndex);
 	}
 
 	// 6. Limit
@@ -196,22 +206,14 @@ function getSortValue(note, property) {
 		return parts[parts.length - 1].replace(/\.[^.]+$/, "");
 	}
 	if (property.startsWith("file.")) {
-		const prop = property.slice(5);
-		// Reuse the simple file property resolution
-		switch (prop) {
-			case "path":
-				return note.path || "";
-			case "folder": {
-				const idx = (note.path || "").lastIndexOf("/");
-				return idx === -1 ? "" : (note.path || "").substring(0, idx);
-			}
-			default:
-				return getUserProperty(note.metadata, prop);
-		}
+		return resolveFileProperty(property.slice(5), note);
 	}
 	if (property.startsWith("formula.")) {
 		const formulaKey = property.slice(8);
 		return note.__formulas ? note.__formulas[formulaKey] : undefined;
+	}
+	if (property.startsWith("note.")) {
+		property = property.slice(5);
 	}
 	return getUserProperty(note.metadata, property);
 }
@@ -219,14 +221,28 @@ function getSortValue(note, property) {
 /**
  * Apply sorting to rows based on view config.
  */
-function applySorting(rows, config) {
+function applySorting(rows, config, noteIndex) {
 	if (config.sort && Array.isArray(config.sort) && config.sort.length > 0) {
 		return [...rows].sort((a, b) => {
 			for (const sortDef of config.sort) {
 				const prop = sortDef.property;
 				const dir = (sortDef.direction || "ASC").toUpperCase() === "DESC" ? -1 : 1;
-				const valA = getSortValue(a, prop);
-				const valB = getSortValue(b, prop);
+				let valA = getSortValue(a, prop);
+				let valB = getSortValue(b, prop);
+
+				const aTitle = wikilinkDisplayTitle(valA, noteIndex);
+				if (aTitle !== null) valA = aTitle;
+				const bTitle = wikilinkDisplayTitle(valB, noteIndex);
+				if (bTitle !== null) valB = bTitle;
+
+				// Empty values sort last in both directions, like Obsidian
+				const aEmpty = isEmptySortValue(valA);
+				const bEmpty = isEmptySortValue(valB);
+				if (aEmpty || bEmpty) {
+					if (aEmpty && bEmpty) continue;
+					return aEmpty ? 1 : -1;
+				}
+
 				const cmp = compareValues(valA, valB);
 				if (cmp !== 0) return cmp * dir;
 			}
@@ -238,13 +254,23 @@ function applySorting(rows, config) {
 	if (config.order && Array.isArray(config.order) && config.order.length > 0) {
 		const firstProp = config.order[0];
 		return [...rows].sort((a, b) => {
-			const valA = getSortValue(a, firstProp);
-			const valB = getSortValue(b, firstProp);
+			let valA = getSortValue(a, firstProp);
+			let valB = getSortValue(b, firstProp);
+
+			const aTitle = wikilinkDisplayTitle(valA, noteIndex);
+			if (aTitle !== null) valA = aTitle;
+			const bTitle = wikilinkDisplayTitle(valB, noteIndex);
+			if (bTitle !== null) valB = bTitle;
+
 			return compareValues(valA, valB);
 		});
 	}
 
 	return rows;
+}
+
+function isEmptySortValue(value) {
+	return value == null || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
 /**
@@ -254,6 +280,14 @@ function compareValues(a, b) {
 	if (a == null && b == null) return 0;
 	if (a == null) return 1;
 	if (b == null) return -1;
+	// Dates arrive as Date objects or ISO strings with differing precision
+	// and offsets ("2025-10-04", "2026-02-12 14:26:00", "...-05:00"), so
+	// compare them chronologically rather than as text
+	if (a instanceof Date || b instanceof Date || (typeof a === "string" && typeof b === "string")) {
+		const aDate = coerceDate(a);
+		const bDate = coerceDate(b);
+		if (aDate && bDate) return aDate.getTime() - bDate.getTime();
+	}
 	if (typeof a === "string" && typeof b === "string") {
 		return a.localeCompare(b);
 	}
@@ -265,22 +299,39 @@ function compareValues(a, b) {
 /**
  * Group rows by a property, optionally sorting groups.
  */
-function applyGrouping(rows, groupByDef) {
+function applyGrouping(rows, groupByDef, noteIndex) {
 	const prop = groupByDef.property;
 	const direction = (groupByDef.direction || "ASC").toUpperCase();
 
 	const groupMap = new Map();
+	const labels = new Map();
 	for (const row of rows) {
-		const key = getSortValue(row, prop);
-		const keyStr = key != null ? String(key) : "(empty)";
+		const raw = getSortValue(row, prop);
+		let keyStr;
+		let label;
+
+		const link = parseWikilink(raw);
+		if (link) {
+			const resolved = noteIndex ? noteIndex.resolve(link.target) : null;
+			label =
+				link.alias ||
+				(resolved && resolved.title) ||
+				link.target.split("/").pop();
+			keyStr = resolved ? "link:" + resolved.path : "link:" + label;
+		} else {
+			keyStr = raw != null ? String(raw) : "(empty)";
+			label = keyStr;
+		}
+
 		if (!groupMap.has(keyStr)) {
 			groupMap.set(keyStr, []);
+			labels.set(keyStr, label);
 		}
 		groupMap.get(keyStr).push(row);
 	}
 
-	let groups = Array.from(groupMap.entries()).map(([key, groupRows]) => ({
-		key,
+	let groups = Array.from(groupMap.entries()).map(([keyStr, groupRows]) => ({
+		key: labels.get(keyStr),
 		rows: groupRows,
 	}));
 

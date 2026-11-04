@@ -26,6 +26,226 @@ function hasUserProperty(metadata, key) {
 // Tags injected by the plugin that aren't real user tags
 const SYSTEM_TAGS = new Set(["note", "gardenEntry"]);
 
+// --- Date coercion ---
+// Published date properties arrive as ISO strings ("1707-04-17"), not Date
+// objects, so date methods/fields/comparisons coerce them on demand.
+
+const ISO_DATE_STRING_REGEX =
+	/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+function isISODateString(value) {
+	return typeof value === "string" && ISO_DATE_STRING_REGEX.test(value.trim());
+}
+
+/**
+ * Convert an ISO date string to a Date. Date-only strings are parsed as
+ * local time (matching Obsidian), not UTC as new Date() would.
+ */
+function coerceDate(value) {
+	if (value instanceof Date) return value;
+	if (!isISODateString(value)) return null;
+	const str = value.trim();
+	const dateOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (dateOnly) {
+		return new Date(
+			Number(dateOnly[1]),
+			Number(dateOnly[2]) - 1,
+			Number(dateOnly[3]),
+		);
+	}
+	const d = new Date(str.replace(" ", "T"));
+	return isNaN(d.getTime()) ? null : d;
+}
+
+const DATE_METHODS = new Set(["format", "date", "relative"]);
+const DATE_FIELDS = new Set([
+	"year",
+	"month",
+	"day",
+	"hour",
+	"minute",
+	"second",
+]);
+
+// --- Date formatting ---
+// Moment.js-style tokens, which is what Obsidian's date.format() uses.
+// Text in [brackets] is emitted literally.
+
+const MONTH_NAMES = [
+	"January", "February", "March", "April", "May", "June",
+	"July", "August", "September", "October", "November", "December",
+];
+const WEEKDAY_NAMES = [
+	"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+
+const FORMAT_TOKEN_REGEX =
+	/\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|Do|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|A|a/g;
+
+function ordinal(n) {
+	const s = ["th", "st", "nd", "rd"];
+	const v = n % 100;
+	return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function formatDate(date, fmt) {
+	const pad = (n, len = 2) => String(n).padStart(len, "0");
+	const hours12 = date.getHours() % 12 || 12;
+	return String(fmt).replace(FORMAT_TOKEN_REGEX, (token, literal) => {
+		if (literal !== undefined) return literal;
+		switch (token) {
+			case "YYYY": return String(date.getFullYear());
+			case "YY": return pad(date.getFullYear() % 100);
+			case "MMMM": return MONTH_NAMES[date.getMonth()];
+			case "MMM": return MONTH_NAMES[date.getMonth()].slice(0, 3);
+			case "MM": return pad(date.getMonth() + 1);
+			case "M": return String(date.getMonth() + 1);
+			case "Do": return ordinal(date.getDate());
+			case "DD": return pad(date.getDate());
+			case "D": return String(date.getDate());
+			case "dddd": return WEEKDAY_NAMES[date.getDay()];
+			case "ddd": return WEEKDAY_NAMES[date.getDay()].slice(0, 3);
+			case "dd": return WEEKDAY_NAMES[date.getDay()].slice(0, 2);
+			case "d": return String(date.getDay());
+			case "HH": return pad(date.getHours());
+			case "H": return String(date.getHours());
+			case "hh": return pad(hours12);
+			case "h": return String(hours12);
+			case "mm": return pad(date.getMinutes());
+			case "m": return String(date.getMinutes());
+			case "ss": return pad(date.getSeconds());
+			case "s": return String(date.getSeconds());
+			case "SSS": return pad(date.getMilliseconds(), 3);
+			case "A": return date.getHours() < 12 ? "AM" : "PM";
+			case "a": return date.getHours() < 12 ? "am" : "pm";
+			default: return token;
+		}
+	});
+}
+
+// --- Image values ---
+// image(path) produces a value the views render as an <img>.
+
+function makeImage(src) {
+	if (src == null || src === "") return undefined;
+	if (src && typeof src === "object" && src.__basesImage) return src;
+	return { __basesImage: true, src: String(src) };
+}
+
+// --- Link values ---
+// link("Family") produces a link value; stored properties are wikilink
+// strings ("[[Family]]", "[[Categories/Family|alias]]"). Targets match the
+// way Obsidian resolves shortest paths: exact, or one path is a trailing
+// segment of the other.
+
+function makeLink(target) {
+	return { __basesLink: true, target: String(target) };
+}
+
+/**
+ * Extract a normalized link target from a link value or wikilink string.
+ * Returns null when the value is neither.
+ */
+function linkTarget(value) {
+	if (value && typeof value === "object" && value.__basesLink) {
+		return value.target.toLowerCase().replace(/\.md$/, "");
+	}
+	if (typeof value === "string") {
+		const match = value.trim().match(/^!?\[\[([^\]]+)\]\]$/);
+		if (match) {
+			const inner = match[1].split("|")[0].split("#")[0].trim();
+			return inner.toLowerCase().replace(/\.md$/, "");
+		}
+	}
+	return null;
+}
+
+function linkTargetsMatch(a, b) {
+	return a === b || a.endsWith("/" + b) || b.endsWith("/" + a);
+}
+
+/**
+ * Bases value equality: lists compare by value, links compare by target,
+ * dates compare by time, everything else falls back to loose equality.
+ */
+function valuesEqual(a, b) {
+	if (Array.isArray(a) && Array.isArray(b)) {
+		if (a.length !== b.length) return false;
+		return a.every((item, i) => valuesEqual(item, b[i]));
+	}
+	// A scalar property compares equal to a single-element list literal,
+	// matching how Obsidian treats single values and lists interchangeably.
+	if (Array.isArray(a)) {
+		return a.length === 1 && valuesEqual(a[0], b);
+	}
+	if (Array.isArray(b)) {
+		return b.length === 1 && valuesEqual(a, b[0]);
+	}
+
+	const aLink = linkTarget(a);
+	const bLink = linkTarget(b);
+	if (aLink !== null && bLink !== null) {
+		return linkTargetsMatch(aLink, bLink);
+	}
+
+	if (a instanceof Date || b instanceof Date) {
+		const aDate = coerceDate(a);
+		const bDate = coerceDate(b);
+		if (aDate && bDate) return aDate.getTime() === bDate.getTime();
+	}
+
+	// eslint-disable-next-line eqeqeq
+	return a == b;
+}
+
+/**
+ * Bases toString(): works on every type so filters like
+ * categories.toString().contains("x") behave like Obsidian.
+ */
+function basesToString(obj) {
+	if (obj == null) return "";
+	if (Array.isArray(obj)) return obj.map(basesToString).join(", ");
+	if (obj instanceof Date) return obj.toISOString();
+	if (typeof obj === "object" && obj.__basesLink) {
+		return "[[" + obj.target + "]]";
+	}
+	return String(obj);
+}
+
+/**
+ * Bases isTruthy(): like JS truthiness, but empty lists are falsy.
+ */
+function basesIsTruthy(obj) {
+	if (Array.isArray(obj)) return obj.length > 0;
+	return Boolean(obj);
+}
+
+function toWikilink(path) {
+	return "[[" + path + "]]";
+}
+
+/**
+ * All user properties of a note as one object (file.properties).
+ */
+function userProperties(metadata) {
+	if (!metadata) return {};
+	return { ...metadata, ...(metadata["dg-note-properties"] || {}) };
+}
+
+/**
+ * file.ctime / file.mtime. The plugin publishes the vault timestamps as
+ * "created" / "updated" (or the user's configured timestamp properties).
+ */
+function fileTimestamp(metadata, prop) {
+	if (!metadata) return undefined;
+	const raw =
+		metadata[prop] !== undefined
+			? metadata[prop]
+			: metadata[prop === "ctime" ? "created" : "updated"];
+	if (raw == null || raw === "") return undefined;
+	return coerceDate(raw) || raw;
+}
+
 /**
  * Resolve a property name from a note's file metadata.
  */
@@ -50,13 +270,19 @@ function resolveFileProperty(prop, note) {
 		case "tags":
 			return ((note.metadata && note.metadata.tags) || []).filter((t) => !SYSTEM_TAGS.has(t));
 		case "links":
+			// Vault paths as wikilinks, so contains(link("x")) can match them
+			if (note._linkPaths) return note._linkPaths.map(toWikilink);
 			return note._links || (note.metadata && note.metadata.links) || [];
 		case "backlinks":
+			if (note._backlinkPaths) return note._backlinkPaths.map(toWikilink);
 			return note._backlinks || (note.metadata && note.metadata.backlinks) || [];
+		case "properties":
+			return userProperties(note.metadata);
 		case "size":
+			return note.metadata ? note.metadata.size : undefined;
 		case "ctime":
 		case "mtime":
-			return note.metadata ? note.metadata[prop] : undefined;
+			return fileTimestamp(note.metadata, prop);
 		default:
 			return undefined;
 	}
@@ -107,6 +333,20 @@ function callMethod(obj, method, args) {
 		if (obj instanceof Date) return false;
 		if (typeof obj === "number") return false;
 		return false;
+	}
+
+	// isTruthy and toString work on any type
+	if (method === "isTruthy") {
+		return basesIsTruthy(obj);
+	}
+	if (method === "toString") {
+		return basesToString(obj);
+	}
+
+	// Published date properties are ISO strings; coerce them when a date
+	// method is called so born.format("YYYY") works like in Obsidian.
+	if (DATE_METHODS.has(method) && isISODateString(obj)) {
+		obj = coerceDate(obj);
 	}
 
 	// String methods
@@ -165,11 +405,15 @@ function callMethod(obj, method, args) {
 	if (Array.isArray(obj)) {
 		switch (method) {
 			case "contains":
-				return obj.includes(args[0]);
+				return obj.some((item) => valuesEqual(item, args[0]));
 			case "containsAll":
-				return args.every((a) => obj.includes(a));
+				return args.every((a) =>
+					obj.some((item) => valuesEqual(item, a)),
+				);
 			case "containsAny":
-				return args.some((a) => obj.includes(a));
+				return args.some((a) =>
+					obj.some((item) => valuesEqual(item, a)),
+				);
 			case "join":
 				return obj.join(args[0]);
 			case "sort":
@@ -190,17 +434,8 @@ function callMethod(obj, method, args) {
 	// Date methods
 	if (obj instanceof Date) {
 		switch (method) {
-			case "format": {
-				const fmt = args[0] || "YYYY-MM-DD";
-				return fmt
-					.replace("YYYY", String(obj.getFullYear()))
-					.replace("MM", String(obj.getMonth() + 1).padStart(2, "0"))
-					.replace("DD", String(obj.getDate()).padStart(2, "0"))
-					.replace("HH", String(obj.getHours()).padStart(2, "0"))
-					.replace("mm", String(obj.getMinutes()).padStart(2, "0"))
-					.replace("ss", String(obj.getSeconds()).padStart(2, "0"));
-			}
-			// falls through not possible due to return above
+			case "format":
+				return formatDate(obj, args[0] || "YYYY-MM-DD");
 			case "date":
 				return new Date(
 					obj.getFullYear(),
@@ -229,6 +464,11 @@ function callMethod(obj, method, args) {
 function resolveProperty(obj, prop) {
 	if (prop === "length") {
 		if (typeof obj === "string" || Array.isArray(obj)) return obj.length;
+	}
+
+	// born.year on a published ISO date string
+	if (DATE_FIELDS.has(prop) && isISODateString(obj)) {
+		obj = coerceDate(obj);
 	}
 
 	if (obj instanceof Date) {
@@ -375,16 +615,28 @@ function evalExpr(ast, note, formulas, context) {
 				);
 			}
 
-			const left = evalExpr(ast.left, note, formulas, context);
-			const right = evalExpr(ast.right, note, formulas, context);
+			let left = evalExpr(ast.left, note, formulas, context);
+			let right = evalExpr(ast.right, note, formulas, context);
+
+			// Ordering comparisons between a Date (e.g. from date()/today())
+			// and a published ISO date string compare as dates.
+			if (
+				[">", "<", ">=", "<="].includes(ast.operator) &&
+				(left instanceof Date || right instanceof Date)
+			) {
+				const leftDate = coerceDate(left);
+				const rightDate = coerceDate(right);
+				if (leftDate && rightDate) {
+					left = leftDate.getTime();
+					right = rightDate.getTime();
+				}
+			}
 
 			switch (ast.operator) {
-				/* eslint-disable eqeqeq */
 				case "==":
-					return left == right;
+					return valuesEqual(left, right);
 				case "!=":
-					return left != right;
-				/* eslint-enable eqeqeq */
+					return !valuesEqual(left, right);
 				case ">":
 					return left > right;
 				case "<":
@@ -469,7 +721,11 @@ function callGlobalFunction(name, args) {
 			return isNaN(d.getTime()) ? undefined : d;
 		}
 		case "if":
-			return args[0] ? args[1] : args[2];
+			return basesIsTruthy(args[0]) ? args[1] : args[2];
+		case "link":
+			return makeLink(args[0]);
+		case "image":
+			return makeImage(args[0]);
 		case "number":
 			return Number(args[0]);
 		case "min":
@@ -499,4 +755,4 @@ function evalFilter(expression, note, formulas) {
 	}
 }
 
-module.exports = { evalExpr, evalFilter };
+module.exports = { evalExpr, evalFilter, resolveFileProperty, coerceDate, formatDate };
